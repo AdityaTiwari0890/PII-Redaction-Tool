@@ -504,3 +504,20 @@ def compute_metrics(tp: int, fp: int, fn: int) -> Dict[str, float]:
     return {"precision": round(precision, 4), "recall": round(recall, 4), 
             "f1": round(f1, 4), "tp": tp, "fp": fp, "fn": fn}
 
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) < 3:
+        print("Usage: python pii_redactor.py <input.docx> <output.docx> [--redact-companies]")
+        sys.exit(1)
+    
+    inp = sys.argv[1]
+    out = sys.argv[2]
+    redact_comp = "--redact-companies" in sys.argv
+    
+    log = process_document(inp, out, redact_companies=redact_comp, preserve_statutory=True)
+    
+    print(f"Redacted document saved to: {out}")
+    print(f"Total replacements: {len(log)}")
+    label_counts = Counter(lbl for _, _, lbl in log)
+    for lbl, cnt in sorted(label_counts.items()):
+        print(f"  {lbl}: {cnt}")
