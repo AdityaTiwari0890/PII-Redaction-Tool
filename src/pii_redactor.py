@@ -430,3 +430,43 @@ class RedactionEngine:
         log.reverse()
         return redacted, log
 
+def process_document(input_path: str, output_path: str,
+                     redact_companies: bool = False,
+                     preserve_statutory: bool = True) -> List[Tuple[str, str, str]]:
+    """
+    Reads a .docx, redacts all PII, writes redacted .docx.
+    Returns the full mapping log.
+    """
+    nlp = spacy.load("en_core_web_sm")
+    dfaker = DeterministicFaker(seed=42)
+    engine = RedactionEngine(nlp, dfaker, redact_companies, preserve_statutory)
+    
+    doc = Document(input_path)
+    all_log = []
+    
+    # Paragraphs
+    for para in doc.paragraphs:
+        if para.text.strip():
+            redacted, log = engine.redact_text(para.text)
+            if log:
+                para.clear()
+                para.add_run(redacted)
+                all_log.extend(log)
+    
+    # Tables
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                if cell.text.strip():
+                    redacted, log = engine.redact_text(cell.text)
+                    if log:
+                        for p in cell.paragraphs:
+                            p.clear()
+                        if cell.paragraphs:
+                            cell.paragraphs[0].add_run(redacted)
+                        else:
+                            cell.add_paragraph(redacted)
+                        all_log.extend(log)
+    
+    doc.save(output_path)
+    return all_log
