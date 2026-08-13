@@ -172,3 +172,185 @@ class CINDetector(RegexDetector):
     def __init__(self):
         super().__init__(r'\b[A-Z]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}\b', "CIN")
 
+
+class NameDetector(PIIDetector):
+    """
+    spaCy NER for PERSON with aggressive false-positive filtering.
+    """
+    
+    PLACE_NAMES = {
+        'birdewadi', 'chakan', 'khed', 'pune', 'maharashtra', 'mumbai', 'india',
+        'baner', 'pallod', 'montreal', 'taloja', 'padghe', 'panvel', 'raigad',
+        'khalumbre', 'supa', 'ahilyanagar', 'ahmednagar', 'bandra', 'kurla',
+        'vikhroli', 'bangalore', 'delhi', 'chennai', 'kolkata', 'hyderabad',
+        'gujarat', 'karnataka', 'nagpur', 'nashik', 'thane', 'andheri',
+        'dadar', 'parel', 'mulund', 'chembur', 'sion', 'wadala', 'mahim',
+        'khar', 'santacruz', 'vile parle', 'juhu', 'powai', 'bhandup',
+        'dombivli', 'kalyan', 'ambernath', 'badlapur', 'karjat', 'lonavala',
+        'hinjewadi', 'wakad', 'aundh', 'kothrud', 'kharadi', 'hadapsar',
+        'wanowrie', 'koregaon park', 'yerwada', 'shivajinagar', 'deccan',
+        'mg road', 'laxmi road', 'budhwar peth', 'ravivar peth', 'nagar',
+        'colony', 'society', 'layout', 'park', 'industrial', 'area', 'zone',
+        'road', 'street', 'lane', 'avenue', 'highway', 'expressway',
+        'east', 'west', 'north', 'south', 'central', 'upper', 'lower',
+        'floor', 'tower', 'building', 'complex', 'plaza', 'mall', 'centre',
+        'farm', 'farms', 'business', 'office', 'plot', 'sector', 'block',
+        'village', 'taluka', 'taluk', 'tehsil', 'district', 'state', 'country',
+        'city', 'town', 'municipality', 'panchayat',
+    }
+    
+    INSTITUTIONAL = {
+        'limited', 'private', 'ltd', 'pvt', 'company', 'corporation', 'inc',
+        'bank', 'exchange', 'securities', 'board', 'fund', 'trust', 'committee',
+        'association', 'council', 'authority', 'commission', 'department',
+        'ministry', 'university', 'college', 'institute', 'hospital', 'clinic',
+        'center', 'estate', 'international', 'national', 'global',
+        'services', 'solutions', 'management', 'consulting', 'advisory',
+        'analytics', 'research', 'bse', 'nse', 'sebi', 'rbi', 'roc', 'llp',
+        'icici', 'hdfc', 'mufg', 'nuvama', 'ksh', 'offer', 'directors',
+        'promoters', 'shareholder', 'pursuant', 'excludes', 'reference',
+        'managerial', 'personnel', 'secondary', 'transfer', 'selling',
+        'pre', 'post', 'key', 'executive', 'non', 'whole', 'time',
+    }
+    
+    def __init__(self, nlp_model):
+        self.nlp = nlp_model
+    
+    def detect(self, text: str) -> List[PIIEntity]:
+        out = []
+        doc = self.nlp(text)
+        
+        for ent in doc.ents:
+            if ent.label_ != "PERSON":
+                continue
+            
+            name_lower = ent.text.lower()
+            words = name_lower.split()
+            
+            # Multi-layer filtering
+            if name_lower in self.PLACE_NAMES:
+                continue
+            if any(w in self.PLACE_NAMES for w in words):
+                continue
+            if any(w in self.INSTITUTIONAL for w in words):
+                continue
+            if len(words) == 1 and len(words[0]) < 4:
+                continue
+            if 'family trust' in name_lower:
+                continue
+            if len(words) > 2 and 'and' in words[1:-1]:
+                continue
+            
+            out.append(PIIEntity(ent.start_char, ent.end_char, ent.text, "PERSON", 0.85))
+        
+        # Heuristic: Title + 2-4 capitalized words
+        title_pat = re.compile(r'\b(?:Mr|Mrs|Ms|Dr|Prof|Shri|Smt)\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\b')
+        for m in title_pat.finditer(text):
+            # Check overlap with existing
+            if any(m.start() < e.end and m.end() > e.start for e in out):
+                continue
+            name_part = m.group(1).lower()
+            words = name_part.split()
+            if not any(w in self.PLACE_NAMES or w in self.INSTITUTIONAL for w in words):
+                out.append(PIIEntity(m.start(), m.end(), m.group(), "PERSON", 0.75))
+        
+        return out
+
+
+class AddressDetector(PIIDetector):
+    """
+    Detects physical addresses. By default preserves statutory labels
+    (Registered Office, Corporate Office) but redacts the address value.
+    """
+    
+    ADDR_KEYWORDS = re.compile(
+        r'\b(?:Village|Plot\s+No|Tower|Floor|Road|Street|Lane|Block|Sector|'
+        r'District|Taluka|Taluk|Tehsil|Maharashtra|Karnataka|Gujarat|'
+        r'Delhi|Mumbai|Pune|Bangalore|Chennai|Kolkata|Hyderabad|'
+        r'Pincode|PIN|Ahilyanagar|Ahmednagar|'
+        r'Baner|Khed|Chakan|Raigad|Panvel|Padghe|Khalumbre|'
+        r'Bandra|Kurla|Vikhroli|BKC|G\s*Block)\b',
+        re.I
+    )
+    
+    PIN_PATTERN = re.compile(r'\b\d{6}\b')
+    
+    STATUTORY = re.compile(
+        r'^(Registered Office|Corporate Office|Head Office|Principal Office|'
+        r'Office of|Address of)\s*[:\\-]?\s*',
+        re.I
+    )
+    
+    def __init__(self, preserve_statutory: bool = True):
+        self.preserve_statutory = preserve_statutory
+    
+    def detect(self, text: str) -> List[PIIEntity]:
+        out = []
+        pos = 0
+        for line in text.split('\n'):
+            stripped = line.strip()
+            if not stripped:
+                pos += len(line) + 1
+                continue
+            
+            has_addr = self.ADDR_KEYWORDS.search(stripped) or self.PIN_PATTERN.search(stripped)
+            if not has_addr:
+                pos += len(line) + 1
+                continue
+            
+            statutory_match = self.STATUTORY.match(stripped)
+            
+            if statutory_match and self.preserve_statutory:
+                addr_start = statutory_match.end()
+                addr_text = stripped[addr_start:].strip()
+                if addr_text and len(addr_text) > 10:
+                    start = pos + line.index(stripped) + addr_start
+                    out.append(PIIEntity(start, start + len(addr_text), addr_text, "ADDRESS"))
+            elif not statutory_match:
+                start = pos + line.index(stripped)
+                out.append(PIIEntity(start, start + len(stripped), stripped, "ADDRESS"))
+            
+            pos += len(line) + 1
+        
+        return out
+
+
+class CompanyDetector(PIIDetector):
+    """
+    Detects company names. Redaction is OFF by default per policy
+    (preserve institutional/statutory info).
+    """
+    
+    STATUTORY = {'sebi', 'bse', 'nse', 'nsdl', 'cdsl', 'rbi', 'roc', 'goi',
+                 'securities and exchange board', 'stock exchange',
+                 'reserve bank', 'income tax'}
+    
+    def __init__(self, nlp_model, redact_enabled: bool = False):
+        self.nlp = nlp_model
+        self.redact_enabled = redact_enabled
+    
+    def detect(self, text: str) -> List[PIIEntity]:
+        if not self.redact_enabled:
+            return []
+        
+        out = []
+        doc = self.nlp(text)
+        
+        for ent in doc.ents:
+            if ent.label_ == "ORG":
+                if any(s in ent.text.lower() for s in self.STATUTORY):
+                    continue
+                out.append(PIIEntity(ent.start_char, ent.end_char, ent.text, "COMPANY", 0.80))
+        
+        comp_pat = re.compile(
+            r'\b[A-Z][a-zA-Z&\s]+(?:Limited|Ltd\.?|Private\s+Limited|LLP|LLC|Inc\.?|Corporation|Corp\.?|PLC)\b',
+            re.I
+        )
+        for m in comp_pat.finditer(text):
+            if any(m.start() < e.end and m.end() > e.start for e in out):
+                continue
+            if not any(s in m.group().lower() for s in self.STATUTORY):
+                out.append(PIIEntity(m.start(), m.end(), m.group(), "COMPANY", 0.70))
+        
+        return out
+
