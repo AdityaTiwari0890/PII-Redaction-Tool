@@ -1,0 +1,153 @@
+[
+  {
+    "id": "email_personal_1",
+    "stratum": "email",
+    "text": "Contact Rashi Patil at rashi.patil@gmail.com for further information.",
+    "annotations": [
+      {"start": 8, "end": 19, "label": "PERSON", "value": "Rashi Patil"},
+      {"start": 23, "end": 44, "label": "EMAIL", "value": "rashi.patil@gmail.com"}
+    ]
+  },
+  {
+    "id": "email_personal_2",
+    "stratum": "email",
+    "text": "Promoter Rohan Dey can be reached at rohan.dey@gmail.com.",
+    "annotations": [
+      {"start": 9, "end": 18, "label": "PERSON", "value": "Rohan Dey"},
+      {"start": 37, "end": 56, "label": "EMAIL", "value": "rohan.dey@gmail.com"}
+    ]
+  },
+  {
+    "id": "phone_1",
+    "stratum": "phone",
+    "text": "For queries, please call +91 98765 43210 or +91 81081 14949.",
+    "annotations": [
+      {"start": 25, "end": 39, "label": "PHONE", "value": "+91 98765 43210"},
+      {"start": 43, "end": 57, "label": "PHONE", "value": "+91 81081 14949"}
+    ]
+  },
+  {
+    "id": "phone_no_redact_tollfree",
+    "stratum": "phone",
+    "text": "Customer care: 1800 123 4567 (toll-free)",
+    "annotations": []
+  },
+  {
+    "id": "pan_1",
+    "stratum": "structured",
+    "text": "PAN of the promoter: ABCDE1234F as declared.",
+    "annotations": [
+      {"start": 21, "end": 31, "label": "PAN", "value": "ABCDE1234F"}
+    ]
+  },
+  {
+    "id": "cin_1",
+    "stratum": "structured",
+    "text": "The company's CIN is U72900MH2018PTC310447.",
+    "annotations": [
+      {"start": 21, "end": 42, "label": "CIN", "value": "U72900MH2018PTC310447"}
+    ]
+  },
+  {
+    "id": "ip_1",
+    "stratum": "structured",
+    "text": "The server IP address is 192.168.1.100 for the internal portal.",
+    "annotations": [
+      {"start": 25, "end": 38, "label": "IP_ADDRESS", "value": "192.168.1.100"}
+    ]
+  },
+  {
+    "id": "ssn_1",
+    "stratum": "structured",
+    "text": "US SSN on record: 123-45-6789",
+    "annotations": [
+      {"start": 18, "end": 29, "label": "SSN", "value": "123-45-6789"}
+    ]
+  },
+  {
+    "id": "credit_card_1",
+    "stratum": "structured",
+    "text": "Payment via card 4111 1111 1111 1111 was processed.",
+    "annotations": [
+      {"start": 17, "end": 36, "label": "CREDIT_CARD", "value": "4111 1111 1111 1111"}
+    ]
+  },
+  {
+    "id": "dob_1",
+    "stratum": "structured",
+    "text": "Date of birth: 15/08/1990 as per the Aadhaar record.",
+    "annotations": [
+      {"start": 15, "end": 25, "label": "DOB", "value": "15/08/1990"}
+    ]
+  },
+  {
+    "id": "address_personal_1",
+    "stratum": "address",
+    "text": "Residential Address: Plot No. 42, Baner Road, Pune - 411045",
+    "annotations": [
+      {"start": 21, "end": 59, "label": "ADDRESS", "value": "Plot No. 42, Baner Road, Pune - 411045"}
+    ]
+  },
+  {
+    "id": "address_statutory_1",
+    "stratum": "address",
+    "text": "Registered Office: Survey No. 46/1, Village Birdewadi, Chakan, Khed, Pune, Maharashtra - 410501",
+    "annotations": [
+      {"start": 19, "end": 95, "label": "ADDRESS", "value": "Survey No. 46/1, Village Birdewadi, Chakan, Khed, Pune, Maharashtra - 410501"}
+    ]
+  },
+  {
+    "id": "name_director_1",
+    "stratum": "name",
+    "text": "Mr. Vikram Singh Oberoi is the Managing Director of the Company.",
+    "annotations": [
+      {"start": 0, "end": 23, "label": "PERSON", "value": "Mr. Vikram Singh Oberoi"}
+    ]
+  },
+  {
+    "id": "name_director_2",
+    "stratum": "name",
+    "text": "Name: Priya Nair\nDesignation: Chief Financial Officer\nDIN: 01234567",
+    "annotations": [
+      {"start": 6, "end": 16, "label": "PERSON", "value": "Priya Nair"}
+    ]
+  },
+  {
+    "id": "name_allcaps_1",
+    "stratum": "name",
+    "text": "RAJESH KUMAR SHARMA holds 25000 equity shares.",
+    "annotations": [
+      {"start": 0, "end": 19, "label": "PERSON", "value": "RAJESH KUMAR SHARMA"}
+    ]
+  },
+  {
+    "id": "no_pii_1",
+    "stratum": "other",
+    "text": "The Board of Directors met on 12 March 2024 and approved the annual report.",
+    "annotations": []
+  },
+  {
+    "id": "no_pii_2",
+    "stratum": "other",
+    "text": "SEBI Circular No. SEBI/HO/CFD/DIL1/CIR/P/2020/01 dated January 01, 2020.",
+    "annotations": []
+  },
+  {
+    "id": "no_pii_ticket_number",
+    "stratum": "other",
+    "text": "Ticket No. TKT-2024-00123 raised for operational issue.",
+    "annotations": []
+  },
+  {
+    "id": "false_positive_guard_place",
+    "stratum": "other",
+    "text": "The factory is located in Chakan, Khed, Pune.",
+    "annotations": []
+  },
+  {
+    "id": "false_positive_guard_org",
+    "stratum": "other",
+    "text": "Bombay Stock Exchange Limited regulates listed companies.",
+    "annotations": []
+  }
+]
