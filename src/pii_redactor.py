@@ -39,3 +39,26 @@ class DeterministicFaker:
             idx = int(hashlib.md5((original + label).encode()).hexdigest(), 16) % len(pool)
             self._cache[key] = pool[idx]
         return self._cache[key]
+    
+@dataclass
+class PIIEntity:
+    start: int
+    end: int
+    text: str
+    label: str
+    confidence: float = 1.0
+
+
+class PIIDetector:
+    def detect(self, text: str) -> List[PIIIEntity]:
+        raise NotImplementedError
+
+
+class RegexDetector(PIIDetector):
+    def __init__(self, pattern: str, label: str, flags=re.IGNORECASE):
+        self.pattern = re.compile(pattern, flags)
+        self.label = label
+    
+    def detect(self, text: str) -> List[PIIEntity]:
+        return [PIIEntity(m.start(), m.end(), m.group(), self.label) 
+                for m in self.pattern.finditer(text)]
