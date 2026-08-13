@@ -354,3 +354,79 @@ class CompanyDetector(PIIDetector):
         
         return out
 
+class RedactionEngine:
+    """
+    Orchestrates detection, conflict resolution, and replacement.
+    """
+    
+    LABEL_PRIORITY = {
+        "EMAIL": 10, "PHONE": 10, "IP_ADDRESS": 10, "SSN": 10,
+        "CREDIT_CARD": 10, "PAN": 10, "CIN": 10,
+        "DOB": 9, "ADDRESS": 8, "PERSON": 7, "COMPANY": 6,
+    }
+    
+    def __init__(self, nlp_model, dfaker: DeterministicFaker, 
+                 redact_companies: bool = False, 
+                 preserve_statutory_addresses: bool = True):
+        self.dfaker = dfaker
+        self.detectors = [
+            EmailDetector(),
+            PhoneDetector(),
+            IPDetector(),
+            SSNDetector(),
+            CreditCardDetector(),
+            DOBDetector(),
+            PANDetector(),
+            CINDetector(),
+            AddressDetector(preserve_statutory=preserve_statutory_addresses),
+            NameDetector(nlp_model),
+            CompanyDetector(nlp_model, redact_enabled=redact_companies),
+        ]
+    
+    def detect_all(self, text: str) -> List[PIIEntity]:
+        all_ents = []
+        for det in self.detectors:
+            try:
+                all_ents.extend(det.detect(text))
+            except Exception as e:
+                print(f"[WARN] {det.__class__.__name__}: {e}")
+        
+        all_ents.sort(key=lambda e: (e.start, -(e.end - e.start)))
+        
+        resolved = []
+        for ent in all_ents:
+            overlap = False
+            for existing in resolved:
+                if ent.start < existing.end and ent.end > existing.start:
+                    ent_pri = self.LABEL_PRIORITY.get(ent.label, 0)
+                    ex_pri = self.LABEL_PRIORITY.get(existing.label, 0)
+                    ent_len = ent.end - ent.start
+                    ex_len = existing.end - existing.start
+                    
+                    if ent_pri > ex_pri or (ent_pri == ex_pri and ent_len > ex_len):
+                        resolved.remove(existing)
+                        break  # will add ent below
+                    else:
+                        overlap = True
+                        break
+            if not overlap:
+                resolved.append(ent)
+        
+        resolved.sort(key=lambda e: e.start)
+        return resolved
+    
+    def redact_text(self, text: str) -> Tuple[str, List[Tuple[str, str, str]]]:
+        ents = self.detect_all(text)
+        replacements = [(e.start, e.end, e.text, self.dfaker.get(e.text, e.label), e.label) 
+                        for e in ents]
+        
+        
+        redacted = text
+        log = []
+        for start, end, orig, fake, label in sorted(replacements, key=lambda x: x[0], reverse=True):
+            redacted = redacted[:start] + fake + redacted[end:]
+            log.append((orig, fake, label))
+        
+        log.reverse()
+        return redacted, log
+
