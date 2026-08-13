@@ -470,3 +470,37 @@ def process_document(input_path: str, output_path: str,
     
     doc.save(output_path)
     return all_log
+
+
+def stratified_sample(texts: List[str], n_per_stratum: int = 50) -> List[str]:
+    """
+    Creates a stratified sample for manual annotation.
+    Strata: paragraphs with names, emails, phones, addresses, other.
+    """
+    strata = defaultdict(list)
+    for t in texts:
+        t_lower = t.lower()
+        if re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', t):
+            strata['email'].append(t)
+        elif re.search(r'\+91\s*\d', t):
+            strata['phone'].append(t)
+        elif any(p in t_lower for p in ['village', 'plot no', 'tower', 'road', 'pune', 'mumbai']):
+            strata['address'].append(t)
+        elif len(t.split()) <= 3:
+            strata['short'].append(t)
+        else:
+            strata['other'].append(t)
+    
+    sample = []
+    for key, items in strata.items():
+        sample.extend(items[:n_per_stratum])
+    return sample
+
+
+def compute_metrics(tp: int, fp: int, fn: int) -> Dict[str, float]:
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+    return {"precision": round(precision, 4), "recall": round(recall, 4), 
+            "f1": round(f1, 4), "tp": tp, "fp": fp, "fn": fn}
+
