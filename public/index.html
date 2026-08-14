@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PII Redactor - Automated DOCX Redaction</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --accent: #238636;
+      --accent-hover: #2ea043;
+      --text: #c9d1d9;
+      --heading: #f0f6fc;
+      --muted: #8b949e;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 640px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    h1 {
+      color: var(--heading);
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    p.subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: rgba(255,255,255,0.01);
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: #58a6ff;
+      background: rgba(88, 166, 255, 0.05);
+    }
+
+    .dropzone svg {
+      width: 48px;
+      height: 48px;
+      fill: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .dropzone p {
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    .dropzone span {
+      color: var(--muted);
+      font-size: 0.85rem;
+      display: block;
+      margin-top: 4px;
+    }
+
+    #fileInput { display: none; }
+
+    .file-info {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: #21262d;
+      border-radius: 8px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.9rem;
+    }
+
+    .options {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-label input {
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+    }
+
+    .btn {
+      margin-top: 24px;
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn:hover { background: var(--accent-hover); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .status {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #58a6ff;
+      display: none;
+    }
+
+    footer {
+      margin-top: 32px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>🔒 PII Redactor</h1>
+    <p class="subtitle">Upload a Red Herring Prospectus or DOCX file to redact personal data instantly.</p>
+
+    <form id="redactForm">
+      <div class="dropzone" id="dropzone">
+        <svg viewBox="0 0 24 24">
+          <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+        </svg>
+        <p>Drag & drop your <strong>.docx</strong> file here</p>
+        <span>or click to browse files</span>
+        <input type="file" id="fileInput" accept=".docx" />
+      </div>
+
+      <div class="file-info" id="fileInfo">
+        <span id="fileName">document.docx</span>
+        <span style="color: var(--muted); cursor: pointer;" id="removeFile">✕</span>
+      </div>
+
+      <div class="options">
+        <label class="checkbox-label">
+          <input type="checkbox" id="redactCompanies" />
+          Also redact company / organization names
+        </label>
+      </div>
+
+      <button type="submit" class="btn" id="submitBtn" disabled>Redact & Download DOCX</button>
+    </form>
+
+    <div class="status" id="statusMsg">Processing document...</div>
+  </div>
+
+  <footer>Powered by FastAPI & PII Redactor Engine</footer>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const removeFile = document.getElementById('removeFile');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusMsg = document.getElementById('statusMsg');
+    const form = document.getElementById('redactForm');
+
+    let selectedFile = null;
+
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+      if (!file.name.endsWith('.docx')) {
+        alert('Please upload a .docx file.');
+        return;
+      }
+      selectedFile = file;
+      fileName.textContent = file.name;
+      fileInfo.style.display = 'flex';
+      submitBtn.disabled = false;
+    }
+
+    removeFile.addEventListener('click', () => {
+      selectedFile = null;
+      fileInput.value = '';
+      fileInfo.style.display = 'none';
+      submitBtn.disabled = true;
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!selectedFile) return;
+
+      submitBtn.disabled = true;
+      statusMsg.style.display = 'block';
+      statusMsg.textContent = 'Processing and redacting PII...';
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('redact_companies', document.getElementById('redactCompanies').checked);
+
+      try {
+        const res = await fetch('/api/redact', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) throw new Error('Redaction failed');
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = selectedFile.name.replace('.docx', '_redacted.docx');
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        const count = res.headers.get('X-Redaction-Count') || '';
+        statusMsg.textContent = `✓ Done! ${count ? count + ' entities redacted.' : 'Redacted file downloaded.'}`;
+      } catch (err) {
+        statusMsg.textContent = '❌ Error processing file. Please try again.';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

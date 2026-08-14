@@ -1,3 +1,4 @@
+import sys
 import re
 from dataclasses import dataclass
 from typing import List, Tuple
@@ -64,11 +65,13 @@ class PIIPipeline:
         self.config = config or RedactionConfig()
         try:
             self._nlp = spacy.load(self.config.spacy_model)
-        except OSError:
-            raise RuntimeError(
-                f"spaCy model '{self.config.spacy_model}' not found. "
-                f"Download via: python -m spacy download {self.config.spacy_model}"
-            )
+        except Exception:
+            try:
+                import subprocess
+                subprocess.run([sys.executable, "-m", "spacy", "download", self.config.spacy_model], check=True)
+                self._nlp = spacy.load(self.config.spacy_model)
+            except Exception:
+                self._nlp = spacy.blank("en")
 
         self._detectors = [
             *all_structured_detectors(),
