@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  pii-redactor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./docs:/app/docs
+      - ./output:/app/output
+      - ./evaluation:/app/evaluation
